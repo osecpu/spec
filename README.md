@@ -1,0 +1,2 @@
+# spec
+Specification of OSECPU
