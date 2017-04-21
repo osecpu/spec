@@ -25,6 +25,11 @@
 - [OSECPUのQ&A](http://osecpu.osask.jp/wiki/?page0011)
 - [OSECPUはどのくらいセキュアか](http://osecpu.osask.jp/wiki/?page0018)
 - [アクセス権問題について](http://osecpu.osask.jp/wiki/?page0020)
+- [高速化のアイデア](http://osecpu.osask.jp/wiki/?page0022)
+- [OSECPUの歴史](http://osecpu.osask.jp/wiki/?page0028)
+- [メモリアクセスの高速化](http://osecpu.osask.jp/wiki/?page0029)
+- [OSECPU-ASKAの注意点](http://osecpu.osask.jp/wiki/?page0030)
+- [フロントエンドバイトコード #0](http://osecpu.osask.jp/wiki/?page0031)
 
 ## 実装する機能
 - ラベルのみにジャンプできる
