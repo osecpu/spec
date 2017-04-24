@@ -31,6 +31,8 @@
 - [OSECPU-ASKAの注意点](http://osecpu.osask.jp/wiki/?page0030)
 - [フロントエンドバイトコード #0](http://osecpu.osask.jp/wiki/?page0031)
 
+- [Rev2のバックエンド命令セット（バイト単位版）](http://osecpu.osask.jp/wiki/?page0090)
+
 ## 実装する機能
 - ラベルのみにジャンプできる
 
