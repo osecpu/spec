@@ -4,6 +4,7 @@
 - ベースとなるバックエンド命令セット: http://osecpu.osask.jp/wiki/?page0072
   - ここから、ソフトウエア的にCPUコードに変換して実行する。
   - 変換プログラムはCPUコードで記述し、ROMに格納する。
+  - 変換時の留意点については [こちら](./back2cpu.md)を参照。
 - 命令フォーマットの詳細については、以下のスプレッドシートに記述している。
   - https://docs.google.com/spreadsheets/d/1Mu7-vil4o_n7MA1vi8nemQ8nVOJB7aya1bV88G011OA/edit?usp=sharing
 
