@@ -1,3 +1,4 @@
 # spec
 Specification of OSECPU
-[f0](fo/index.md)
+
+- [f0](./f0/index.md)
