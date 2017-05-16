@@ -39,7 +39,10 @@
 ## 実装しないがOSECPU-VMで特徴的な機能
 - [整数レジスタのbit属性](http://osecpu.osask.jp/wiki/?page0078)
 
-## 実行環境と命令セット
+### 構成図
+![トップレベルブロックダイアグラム](https://raw.githubusercontent.com/osecpu/spec/master/f0/schem/osecpu_toplevel_overview.png)
+
+### 実行環境と命令セットの詳細
 [opcode.md](./opcode.md)を参照。
 
 ## 起動シーケンス
