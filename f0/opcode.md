@@ -27,12 +27,12 @@
 |----:|:---------:|:--------:|
 |field|LBID(12bit)|ofs(16bit)|
 
-- ラベルテーブルx4096
+- ラベルテーブルx4096(LBT)
   - 1エントリの構造(40bit)
   
 |bit  |0 - 7    |8 - 23     |24-39     |
 |----:|:-------:|:---------:|:--------:|
-|field|typ(8bit)|base(16bit)|len(16bit)|
+|field|typ(8bit)|base(16bit)|count(16bit)|
 
 ## 定数等
 - メモリtypに指定可能な値は以下のとおりである。
@@ -58,18 +58,26 @@
 
 - 上記以外の値がtypに指定された場合は無効命令例外(#UD)が発生する。
 - 32bit OSECPUでは、32ビット符号なし整数は指定できない。
-- 
-
-
 
 ## 01: LBSET
 ### オペランド
 - typ: データタイプ
+- LBID: ラベル番号
 - base: 符号なし整数
 - count: 符号なし整数
 
 ### 動作
 - メモリのbase番地を開始点として、typのデータがcount個存在するようなラベルを定義する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+IR[1] <- MEM[PC]
+PC++
+LBT[IR[0].LBID].typ = IR[0].typ
+LBT[IR[0].LBID].base = IR[0].base
+LBT[IR[0].LBID].count = IR[0].count
+```
 
 ## 02: LIMM16
 ### オペランド
@@ -80,6 +88,11 @@
 - r = imm16
 - imm16は符号拡張されてから代入される。
 
+```
+IR[0] <- MEM[PC]
+PC++
+R[IR[0].r] = IR[0].imm16
+```
 
 ## 03: PLIMM
 ### オペランド
@@ -89,6 +102,23 @@
 ### 動作
 - ポインタレジスタpにラベル番号LBIDを代入する。ポインタのオフセットは0に初期化される。
 
+- pがP3Fの場合はJMP命令となる。このとき、代入されるラベルのtypはCodeでなければならない。そうでない場合、セキュリティ例外が発生する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+if(IR[0].p == 0x3F){
+	// JMP
+} else{
+	// Load data label
+	if(LBT[IR[0].LBID].typ is not data) raise(#SE);
+	P[IR[0].p].typ = LBT[IR[0].LBID].typ
+	P[IR[0].p].base = LBT[IR[0].LBID].base
+	P[IR[0].p].count = LBT[IR[0].LBID].count
+}
+```
+
+
 ## 04: CND
 ### オペランド
 - r: 整数レジスタ番号
@@ -96,6 +126,15 @@
 - 後続する1命令の実行を整数レジスタrの内容に応じてスキップする。
   - レジスタrのLSBが1: 後続する1命令を実行する。
   - レジスタrのLSBが0: 後続する1命令は実行しない。
+
+```
+IR[0] <- MEM[PC]
+PC++
+if(R[IR[0].r} & 0x01 == 0){
+	// skip next instruction
+	PC++
+}
+```
 
 ## 08: LMEM
 ### オペランド
@@ -106,6 +145,19 @@
 - ポインタレジスタpが指す内容を整数レジスタrに代入する。
 - ポインタレジスタpが指すラベルのデータ型はtypと一致しなければならない。
   - 一致しない場合はセキュリティ例外(#SE)が発生する。
+- ポインタレジスタpのオフセットは、そのポインタの指すラベルのcount未満でなければならない。
+  - そうでない場合はセキュリティ例外(#SE)が発生する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p].typ == Undefined || P[IR[0].p].typ != IR[0].typ) raise(#SE)
+if(P[IR[0].p].typ is not data) raise(#SE)
+if(P[IR[0].p].ofs >= LBT[P[IR[0].p].LBID].count) raise(#SE)
+R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
+
+```
 
 ## 09: SMEM
 ### オペランド
