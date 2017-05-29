@@ -178,8 +178,9 @@ if(R[IR[0].r} & 0x01 == 0){
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p].typ == Undefined || P[IR[0].p].typ != IR[0].typ) raise(#SE)
-if(P[IR[0].p].typ is not data) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ == Undefined) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ != IR[0].typ) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ is not data)  raise(#SE)
 if(P[IR[0].p].ofs >= LBT[P[IR[0].p].LBID].count) raise(#SE)
 R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 
@@ -201,8 +202,9 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p].typ == Undefined || P[IR[0].p].typ != IR[0].typ) raise(#SE)
-if(P[IR[0].p].typ is not data) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ == Undefined) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ != IR[0].typ) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ is not data)  raise(#SE)
 if(P[IR[0].p].ofs >= LBT[P[IR[0].p].LBID].count) raise(#SE)
 MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs] = R[IR[0].r]
 ```
@@ -223,7 +225,7 @@ MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs] = R[IR[0].r]
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p0].typ != VPtr) raise(#SE)
+if(LBT[P[IR[0].p0].LBID].typ != VPtr) raise(#SE)
 if(P[IR[0].p0].ofs >= LBT[P[IR[0].p0].LBID].count) raise(#SE)
 P[IR[0].p1] = MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs]
 // TODO: Fix bit fields for VPtr
@@ -246,7 +248,7 @@ P[IR[0].p1] = MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs]
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p0].typ != VPtr) raise(#SE)
+if(LBT[P[IR[0].p0].LBID].typ != VPtr) raise(#SE)
 if(P[IR[0].p0].ofs >= LBT[P[IR[0].p0].LBID].count) raise(#SE)
 MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs] = P[IR[0].p1]
 // TODO: Fix bit fields for VPtr
@@ -270,7 +272,7 @@ MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs] = P[IR[0].p1]
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p1].typ != IR[0].typ) raise(#SE)
+if(LBT[P[IR[0].p1].LBID].typ != IR[0].typ) raise(#SE)
 P[IR[0].p0].LBID = P[IR[0].p1].LBID
 P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 ```
@@ -288,13 +290,14 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
   - そうでなければセキュリティ例外が発生する。
 - p1およびp0のLBIDはお互いに一致していなければならない。
   - そうでなければセキュリティ例外が発生する。
+
 ```
 IR[0] <- MEM[PC]
 PC++
 
-if(P[IR[0].p0].typ != IR[0].typ) raise(#SE)
-if(P[IR[0].p1].typ != IR[0].typ) raise(#SE)
-if(P[IR[0].p1].LBID != P[IR[0].p1]) raise(#SE)
+if(LBT[P[IR[0].p0].LBID].typ != IR[0].typ) raise(#SE)
+if(LBT[P[IR[0].p1].LBID].typ != IR[0].typ) raise(#SE)
+if(P[IR[0].p1].LBID != P[IR[0].p1].LBID) raise(#SE)
 P[IR[0].p0].LBID = P[IR[0].p1].LBID
 P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 ```
@@ -308,6 +311,15 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - r0 = r1 & r2
 - ビットごとの論理演算を行う。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(IR[0] == 0x10) R[IR[0].r0] = R[IR[0].r1] | R[IR[0].r2]
+if(IR[0] == 0x11) R[IR[0].r0] = R[IR[0].r1] ^ R[IR[0].r2]
+if(IR[0] == 0x12) R[IR[0].r0] = R[IR[0].r1] & R[IR[0].r2]
+```
+
 ## 14-15: ADD, SUB
 ### オペランド
 - r0, r1, r2: 整数レジスタ番号
@@ -317,12 +329,29 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - 符号付き整数として演算を行う。
 - オーバーフロー/アンダーフローが発生した場合はセキュリティ例外が発生する。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(IR[0] == 0x14) R[IR[0].r0] = R[IR[0].r1] + R[IR[0].r2]
+if(IR[0] == 0x15) R[IR[0].r0] = R[IR[0].r1] - R[IR[0].r2]
+if(ALU.OF) raise (#SE)
+```
+
 ## 16: MUL
 ### オペランド
 - r0, r1, r2: 整数レジスタ番号
 ### 動作
 - r0 = r1 * r2
 - オーバーフローが発生した場合はセキュリティ例外が発生する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(IR[0] == 0x16) R[IR[0].r0] = R[IR[0].r1] * R[IR[0].r2]
+if(ALU.OF) raise (#SE)
+```
 
 ## 18-19: SHL, SAR
 ### オペランド
@@ -331,6 +360,13 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - r0 = r1 << r2
 - r0 = r1 >> r2
 - 右シフトは算術シフトで行われます。
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(IR[0] == 0x18) R[IR[0].r0] = R[IR[0].r1] << R[IR[0].r2]
+if(IR[0] == 0x19) R[IR[0].r0] = R[IR[0].r1] >> R[IR[0].r2]
+```
 
 ## 1A-1B: DIV, MOD
 ### オペランド
@@ -340,6 +376,15 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - r0 = r1 % r2
 - r2が0の場合は除算例外(#DE)が発生する。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(R[IR[0].r2] == 0) raise(#DE)
+
+if(IR[0] == 0x18) R[IR[0].r0] = R[IR[0].r1] / R[IR[0].r2]
+if(IR[0] == 0x19) R[IR[0].r0] = R[IR[0].r1] % R[IR[0].r2]
+```
 
 ## 1E: PCP
 ### オペランド
@@ -347,6 +392,13 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 ### 動作
 - p0 = p1
 - p0のポインタの指す先を、p1のポインタと等しくする。
+```
+IR[0] <- MEM[PC]
+PC++
+
+P[IR[0].p0].LBID = P[IR[0].p1].LBID
+P[IR[0].p0].ofs = P[IR[0].p1].ofs
+```
 
 ## 20-25: CMP(E|NE|L|GE|LE|G)
 ### オペランド
@@ -361,6 +413,20 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 
 - r0には右辺の真偽値(真ならば1, 偽ならば0)が代入される。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+R[IR[0].r1] - R[IR[0].r2]
+
+if(IR[0] == 0x20) R[IR[0].r0] = ALU.ZF
+if(IR[0] == 0x21) R[IR[0].r0] = !ALU.ZF
+if(IR[0] == 0x22) R[IR[0].r0] = ALU.NF
+if(IR[0] == 0x23) R[IR[0].r0] = !ALU.NF
+if(IR[0] == 0x24) R[IR[0].r0] = ALU.NF | ALU.ZF
+if(IR[0] == 0x25) R[IR[0].r0] = !ALU.NF & !ALU.ZF
+```
+
 ## 26-27: TST(Z|NZ)
 ### オペランド
 - r0, r1, r2: 整数レジスタ番号
@@ -368,6 +434,16 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - r0 = ((r1 & r2) == 0)
 - r0 = ((r1 & r2) != 0)
 - r0には右辺の真偽値(真ならば1, 偽ならば0)が代入される。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+R[IR[0].r1] & R[IR[0].r2]
+
+if(IR[0] == 0x26) R[IR[0].r0] = ALU.ZF
+if(IR[0] == 0x27) R[IR[0].r0] = !ALU.ZF
+```
 
 ## 28-2D: PCMP(E|NE|L|GE|LE|G)
 ### オペランド
@@ -383,6 +459,22 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 - p1とp2が同一のラベルを参照していない場合はセキュリティ例外。
 - r0には右辺の真偽値(真ならば1, 偽ならば0)が代入される。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p1].LBID != P[IR[0].p2].LBID) raise(#SE)
+
+P[IR[0].p1].ofs - P[IR[0].p2].LBID
+
+if(IR[0] == 0x28) R[IR[0].r0] = ALU.ZF
+if(IR[0] == 0x29) R[IR[0].r0] = !ALU.ZF
+if(IR[0] == 0x2A) R[IR[0].r0] = ALU.NF
+if(IR[0] == 0x2B) R[IR[0].r0] = !ALU.NF
+if(IR[0] == 0x2C) R[IR[0].r0] = ALU.NF | ALU.ZF
+if(IR[0] == 0x2D) R[IR[0].r0] = !ALU.NF & !ALU.ZF
+```
+
 ## D0: LIMM32
 ### オペランド
 - r: 整数レジスタ番号
@@ -391,3 +483,89 @@ P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
 ### 動作
 - r = imm32
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+IR[1] <- MEM[PC]
+PC++
+
+R[IR[0].r] = IR[1]
+```
+
+## D1: LMEMCONV
+### オペランド
+- r: 整数レジスタ番号
+- p: ポインタレジスタ番号
+- typ: データタイプ
+### 動作
+- ポインタレジスタpが指す内容を整数レジスタrに代入する。
+- ポインタレジスタpが指すラベルのデータ型はtypと一致しなければならない。
+  - 一致しない場合はセキュリティ例外(#SE)が発生する。
+- ポインタレジスタpのオフセットは、そのポインタの指すラベルのcount未満でなければならない。
+  - そうでない場合はセキュリティ例外(#SE)が発生する。
+- この命令は、パックされた状態のデータを読み込み、符号拡張して整数レジスタに代入する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(LBT[P[IR[0].p].LBID].typ == Undefined) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ != IR[0].typ) raise(#SE)
+if(LBT[P[IR[0].p].LBID].typ is not data)  raise(#SE)
+if(P[IR[0].p].ofs >= LBT[P[IR[0].p].LBID].count) raise(#SE)
+
+TMP_ADDR = (LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs)
+
+switch(IR[0].typ >> 1){
+	case 0b000:
+	case 0b011:
+		// 32bit
+		TMP_DATA = MEM[TMP_ADDR]
+		break;
+	case 0b010:
+		// 16bit
+		TMP_ADDR = TMP_ADDR >> 1
+		TMP_DATA = MEM[TMP_ADDR] >> (2 - 1 - (TMP_ADDR & 0b1)) & 0xffff
+		if(IR[0].typ & 1) TMP_DATA = sigext(TMP_DATA)
+		break;
+	case 0b010:
+		// 8bit
+		TMP_ADDR = TMP_ADDR >> 2
+		TMP_DATA = MEM[TMP_ADDR] >> (4 - 1 - (TMP_ADDR & 0b11)) & 0xff
+		if(IR[0].typ & 1) TMP_DATA = sigext(TMP_DATA)
+		break;
+	case 0b010:
+		// 4bit
+		TMP_ADDR = TMP_ADDR >> 3
+		TMP_DATA = MEM[TMP_ADDR] >> (8 - 1 - (TMP_ADDR & 0b111)) & 0xf
+		if(IR[0].typ & 1) TMP_DATA = sigext(TMP_DATA)
+		break;
+	case 0b010:
+		// 2bit
+		TMP_ADDR = TMP_ADDR >> 4
+		TMP_DATA = MEM[TMP_ADDR] >> (16 - 1 - (TMP_ADDR & 0b1111)) & 0b11
+		if(IR[0].typ & 1) TMP_DATA = sigext(TMP_DATA)
+		break;
+	case 0b010:
+		// 1bit
+		TMP_ADDR = TMP_ADDR >> 5
+		TMP_DATA = MEM[TMP_ADDR] >> (32 - 1 - (TMP_ADDR & 0b11111)) & 0b1
+		if(IR[0].typ & 1) TMP_DATA = sigext(TMP_DATA)
+		break;
+}
+
+R[IR[0].r] <- TMP_DATA
+
+```
+
+## F0: END
+### オペランド
+なし
+
+### 動作
+- CPUの動作を停止させる。
+
+```
+CR.HLT <- 1
+```
