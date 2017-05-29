@@ -63,24 +63,24 @@
 ## 形式的記述の例
 ```
 // 整数レジスタ
-R[0x3F] <- 0		// R3Fに0を代入
+R[0x3F] <- 0              // R3Fに0を代入
 
 // ポインタレジスタ
-P[0x3F].LBID		// P3FのLBID
-P[0x3F].ofs			// P3Fのofs
+P[0x3F].LBID              // P3FのLBID
+P[0x3F].ofs               // P3Fのofs
 
 // ラベルテーブル
-LBT[0].typ			// ラベル0のtyp
-LBT[0].base			// ラベル0のbase
-LBT[0].count		// ラベル0のcount
+LBT[0].typ                // ラベル0のtyp
+LBT[0].base               // ラベル0のbase
+LBT[0].count              // ラベル0のcount
 
 // ポインタレジスタとラベルテーブルの組み合わせ
-LBT[P[0x3F].LBID].typ	// P3Fが指すラベルのtyp
+LBT[P[0x3F].LBID].typ	  // P3Fが指すラベルのtyp
 
 // 命令レジスタと命令カウンタ（内部）
 // 命令レジスタIRはIR[0]とIR[1]の2個ある。
-IR[0] = MEM[PC]		// プログラムカウンタの指す命令をIR0にフェッチ
-PC <- PC + 1		// プログラムカウンタをインクリメント
+IR[0] = MEM[PC]		      // プログラムカウンタの指す命令をIR0にフェッチ
+PC <- PC + 1		      // プログラムカウンタをインクリメント
 ```
 
 ## 01: LBSET
