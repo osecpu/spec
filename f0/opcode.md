@@ -16,13 +16,14 @@
 - #UD: 無効命令例外
 - #SE: セキュリティ例外
 - #DE: 除算例外
+- (#OE: オーバーフロー例外)
 
 ## 実行環境
 - 32bit符号付き整数レジスタx64(R0-R3F)
 
 - ポインタレジスタx64(P0-P3F)
   - 1エントリの構造(28bit)
-  
+ 
 |bit  |0 - 11     |12 - 27   |
 |----:|:---------:|:--------:|
 |field|LBID(12bit)|ofs(16bit)|
@@ -58,6 +59,29 @@
 
 - 上記以外の値がtypに指定された場合は無効命令例外(#UD)が発生する。
 - 32bit OSECPUでは、32ビット符号なし整数は指定できない。
+
+## 形式的記述の例
+```
+// 整数レジスタ
+R[0x3F] <- 0		// R3Fに0を代入
+
+// ポインタレジスタ
+P[0x3F].LBID		// P3FのLBID
+P[0x3F].ofs			// P3Fのofs
+
+// ラベルテーブル
+LBT[0].typ			// ラベル0のtyp
+LBT[0].base			// ラベル0のbase
+LBT[0].count		// ラベル0のcount
+
+// ポインタレジスタとラベルテーブルの組み合わせ
+LBT[P[0x3F].LBID].typ	// P3Fが指すラベルのtyp
+
+// 命令レジスタと命令カウンタ（内部）
+// 命令レジスタIRはIR[0]とIR[1]の2個ある。
+IR[0] = MEM[PC]		// プログラムカウンタの指す命令をIR0にフェッチ
+PC <- PC + 1		// プログラムカウンタをインクリメント
+```
 
 ## 01: LBSET
 ### オペランド
@@ -147,6 +171,8 @@ if(R[IR[0].r} & 0x01 == 0){
   - 一致しない場合はセキュリティ例外(#SE)が発生する。
 - ポインタレジスタpのオフセットは、そのポインタの指すラベルのcount未満でなければならない。
   - そうでない場合はセキュリティ例外(#SE)が発生する。
+- この命令は、32bit幅に展開済みのデータを常に読み込む。
+  - パックされた状態のデータを読み込みたい場合には、`LMEMCONV`命令を使用すること。
 
 ```
 IR[0] <- MEM[PC]
@@ -168,6 +194,18 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 - 整数レジスタrの内容をポインタレジスタpが指す位置に書き込む。
 - ポインタレジスタpが指すラベルのデータ型はtypと一致しなければならない。
   - 一致しない場合はセキュリティ例外(#SE)が発生する。
+- この命令では、32bit幅に値が展開される（レジスタのデータがそのまま書き込まれる）。
+  - 現段階で、パックされた状態のメモリに対して演算を行う命令は用意されていない。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p].typ == Undefined || P[IR[0].p].typ != IR[0].typ) raise(#SE)
+if(P[IR[0].p].typ is not data) raise(#SE)
+if(P[IR[0].p].ofs >= LBT[P[IR[0].p].LBID].count) raise(#SE)
+MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs] = R[IR[0].r]
+```
 
 
 ## 0A: PLMEM
@@ -181,6 +219,17 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 - typはVPtrでなければならない。
   - そうでなければセキュリティ例外が発生する。
 
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p0].typ != VPtr) raise(#SE)
+if(P[IR[0].p0].ofs >= LBT[P[IR[0].p0].LBID].count) raise(#SE)
+P[IR[0].p1] = MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs]
+// TODO: Fix bit fields for VPtr
+```
+
+
 ## 0B: PSMEM
 ### オペランド
 - p0: ポインタレジスタ番号
@@ -192,6 +241,16 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
   - 書き込まれる情報には、ポインタのオフセットも含まれる。
 - typはVPtrでなければならない。
   - そうでなければセキュリティ例外が発生する。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p0].typ != VPtr) raise(#SE)
+if(P[IR[0].p0].ofs >= LBT[P[IR[0].p0].LBID].count) raise(#SE)
+MEM[LBT[P[IR[0].p0].LBID].base + P[IR[0].p0].ofs] = P[IR[0].p1]
+// TODO: Fix bit fields for VPtr
+```
 
 ## 0E: PADD
 ### オペランド
@@ -205,6 +264,16 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 - p1のオフセットにrを足したものをp0に代入する。
 - typはp1の指すtypと一致していなければならない。
   - そうでなければセキュリティ例外が発生する。
+- この命令によりポインタが移動した結果、オフセットがラベルの範囲外になっても、例外は発生しない。
+
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p1].typ != IR[0].typ) raise(#SE)
+P[IR[0].p0].LBID = P[IR[0].p1].LBID
+P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
+```
 
 ## 0F: PDIF
 ### オペランド
@@ -217,6 +286,18 @@ R[IR[0].r] = MEM[LBT[P[IR[0].p].LBID].base + P[IR[0].p].ofs]
 - p0のオフセットからp1のオフセットを引いた結果を整数レジスタrに代入する。
 - typはp1およびp0のtypと一致していなければならない。
   - そうでなければセキュリティ例外が発生する。
+- p1およびp0のLBIDはお互いに一致していなければならない。
+  - そうでなければセキュリティ例外が発生する。
+```
+IR[0] <- MEM[PC]
+PC++
+
+if(P[IR[0].p0].typ != IR[0].typ) raise(#SE)
+if(P[IR[0].p1].typ != IR[0].typ) raise(#SE)
+if(P[IR[0].p1].LBID != P[IR[0].p1]) raise(#SE)
+P[IR[0].p0].LBID = P[IR[0].p1].LBID
+P[IR[0].p0].ofs = P[IR[0].p1].ofs + R[IR[0].r]
+```
 
 ## 10-12: OR, XOR, AND
 ### オペランド
