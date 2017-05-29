@@ -40,7 +40,11 @@
 - [整数レジスタのbit属性](http://osecpu.osask.jp/wiki/?page0078)
 
 ### 構成図
+#### トップレベル
 ![トップレベルブロックダイアグラム](https://raw.githubusercontent.com/osecpu/spec/master/f0/schem/osecpu_toplevel_overview.png)
+
+#### メモリアクセス時のデータフロー
+![メモリアクセスデータフロー](https://raw.githubusercontent.com/osecpu/spec/master/f0/schem/osecpu_mem_data_flow.png)
 
 ### 実行環境と命令セットの詳細
 [opcode.md](./opcode.md)を参照。
