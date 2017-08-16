@@ -382,8 +382,8 @@ PC++
 
 if(R[IR[0].r2] == 0) raise(#DE)
 
-if(IR[0] == 0x18) R[IR[0].r0] = R[IR[0].r1] / R[IR[0].r2]
-if(IR[0] == 0x19) R[IR[0].r0] = R[IR[0].r1] % R[IR[0].r2]
+if(IR[0] == 0x1A) R[IR[0].r0] = R[IR[0].r1] / R[IR[0].r2]
+if(IR[0] == 0x1B) R[IR[0].r0] = R[IR[0].r1] % R[IR[0].r2]
 ```
 
 ## 1E: PCP
